@@ -59,4 +59,8 @@ htmlcov/
 .env
 .env.local
 
+# Docker
+.dockerignore
+
+# Uploads
 uploads/

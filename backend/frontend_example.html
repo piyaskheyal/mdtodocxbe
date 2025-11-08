@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Integration Example - MD to DOCX</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        .section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .file-input {
+            margin: 10px 0;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .download-link {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+        }
+        .download-link:hover {
+            background-color: #218838;
+        }
+    </style>
+</head>
+<body>
+    <h1>Markdown to DOCX Converter - Frontend Example</h1>
+    <p>This is a simple example showing how to integrate with the backend API.</p>
+
+    <!-- Text Paste Method -->
+    <div class="section">
+        <h2>Method 1: Paste Markdown Text</h2>
+        <textarea id="markdownText" placeholder="Paste your markdown here...
+Example:
+# Hello World
+
+This is **bold** and *italic* text.
+
+## Table
+
+| Name | Age |
+|------|-----|
+| John | 30  |
+"></textarea>
+        <input type="text" id="filename" placeholder="Optional: filename (without extension)" style="width: 100%; padding: 10px; margin-top: 10px;">
+        <button onclick="convertText()">Convert to DOCX</button>
+        <div id="textResult"></div>
+    </div>
+
+    <!-- File Upload Method -->
+    <div class="section">
+        <h2>Method 2: Upload Markdown File</h2>
+        <div class="file-input">
+            <input type="file" id="fileInput" accept=".md">
+        </div>
+        <button onclick="uploadFile()">Upload and Convert</button>
+        <div id="uploadResult"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+
+        // Convert markdown text to DOCX
+        async function convertText() {
+            const markdown = document.getElementById('markdownText').value;
+            const filename = document.getElementById('filename').value;
+            const resultDiv = document.getElementById('textResult');
+
+            if (!markdown.trim()) {
+                resultDiv.innerHTML = '<div class="result error">Please enter some markdown text.</div>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="result">Converting...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/convert/text`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        markdown: markdown,
+                        filename: filename || undefined
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            <p>✅ Conversion successful!</p>
+                            <a href="${API_BASE_URL}${data.download_url}" 
+                               class="download-link" 
+                               download="${data.filename}">
+                                Download ${data.filename}
+                            </a>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="result error">Error: ${data.detail || 'Conversion failed'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">Error: ${error.message}</div>`;
+            }
+        }
+
+        // Upload markdown file and convert
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const resultDiv = document.getElementById('uploadResult');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                resultDiv.innerHTML = '<div class="result error">Please select a file.</div>';
+                return;
+            }
+
+            const file = fileInput.files[0];
+            
+            if (!file.name.endsWith('.md')) {
+                resultDiv.innerHTML = '<div class="result error">Please select a .md file.</div>';
+                return;
+            }
+
+            resultDiv.innerHTML = '<div class="result">Uploading and converting...</div>';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/convert/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            <p>✅ Conversion successful!</p>
+                            <a href="${API_BASE_URL}${data.download_url}" 
+                               class="download-link" 
+                               download="${data.filename}">
+                                Download ${data.filename}
+                            </a>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<div class="result error">Error: ${data.detail || 'Conversion failed'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
